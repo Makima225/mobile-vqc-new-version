@@ -1,0 +1,25 @@
+import 'package:get/get.dart';
+import 'auth/auth_service.dart';
+import 'core/sous_projets_service.dart';
+import 'core/profile_picture_service.dart';
+import 'core/activite_generale_service.dart';
+
+class DependencyInjection {
+  static Future<void> init() async {
+    // Enregistrement de l'AuthService
+    final authService = AuthService();
+    await authService.init(); // Initialisation du service
+    Get.put<AuthService>(authService);
+    
+    // Enregistrement du SousProjetService
+    Get.put<SousProjetService>(SousProjetService());
+    
+    // Enregistrement du ProfilePictureService
+    Get.put<ProfilePictureService>(ProfilePictureService());
+    
+    // Enregistrement de l'ActiviteGeneraleService
+    Get.put<ActiviteGeneraleService>(ActiviteGeneraleService());
+    
+    print('Services d\'injection de dépendances initialisés');
+  }
+}
