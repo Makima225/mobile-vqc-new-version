@@ -28,10 +28,7 @@ class QualiticiensTemplateListScreen extends StatelessWidget {
             child: _buildSearchAndFilters(),
           ),
           
-          // Statistiques
-          SliverToBoxAdapter(
-            child: Obx(() => _buildStatisticsCard()),
-          ),
+         
           
           // Contenu principal
           SliverToBoxAdapter(
@@ -135,24 +132,9 @@ class QualiticiensTemplateListScreen extends StatelessWidget {
           // Filtres par type
           Row(
             children: [
-              Text(
-                'Type:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Obx(() => Wrap(
-                  spacing: 8,
-                  children: [
-                    _buildFilterChip('Tous', null),
-                    _buildFilterChip('PDF', TypeTemplate.pdf),
-                    _buildFilterChip('DOCX', TypeTemplate.docx),
-                  ],
-                )),
-              ),
+             
+              
+            
               // Bouton effacer filtres
               Obx(() => _controller.searchQuery.isNotEmpty || 
                          _controller.selectedTypeFilter != null
@@ -169,108 +151,11 @@ class QualiticiensTemplateListScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterChip(String label, TypeTemplate? type) {
-    final isSelected = _controller.selectedTypeFilter == type;
-    
-    return FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : mainColor,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        ),
-      ),
-      selected: isSelected,
-      onSelected: (selected) {
-        _controller.updateTypeFilter(selected ? type : null);
-      },
-      backgroundColor: Colors.grey[100],
-      selectedColor: mainColor,
-      checkmarkColor: Colors.white,
-    );
-  }
 
-  Widget _buildStatisticsCard() {
-    if (!_controller.hasData) return const SizedBox();
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _buildStatItem(
-            icon: Icons.folder_copy,
-            label: 'Total',
-            value: '${_controller.totalTemplates}',
-            color: mainColor,
-          ),
-          const SizedBox(width: 24),
-          _buildStatItem(
-            icon: Icons.picture_as_pdf,
-            label: 'PDF',
-            value: '${_controller.pdfTemplatesCount}',
-            color: Colors.red,
-          ),
-          const SizedBox(width: 24),
-          _buildStatItem(
-            icon: Icons.description,
-            label: 'DOCX',
-            value: '${_controller.docxTemplatesCount}',
-            color: Colors.blue,
-          ),
-          const SizedBox(width: 24),
-          _buildStatItem(
-            icon: Icons.inventory_2,
-            label: 'Quantité',
-            value: '${_controller.totalQuantity}',
-            color: Colors.green,
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildStatItem({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  
+
+  
 
   Widget _buildMainContent() {
     // État de chargement
