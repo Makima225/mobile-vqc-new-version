@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/core/activite_generale_model.dart';
+import '../models/core/activite_specifique_model.dart';
 
-class ActiviteGeneraleCard extends StatelessWidget {
-  final ActiviteGenerale activite;
+class ActiviteSpecifiqueCard extends StatelessWidget {
+  final ActiviteSpecifique activite;
   final bool isSelected;
   final Color primaryColor;
   final VoidCallback? onTap;
 
-  const ActiviteGeneraleCard({
+  const ActiviteSpecifiqueCard({
     super.key,
     required this.activite,
     this.isSelected = false,
@@ -54,7 +54,7 @@ class ActiviteGeneraleCard extends StatelessWidget {
                 // En-tête avec l'icône et le badge
                 Row(
                   children: [
-                    // Icône de l'activité
+                    // Icône de l'activité spécifique
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -64,7 +64,7 @@ class ActiviteGeneraleCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        Icons.assignment_turned_in_outlined,
+                        Icons.task_alt_outlined,
                         color: isSelected ? Colors.white : primaryColor,
                         size: 24,
                       ),
@@ -72,7 +72,7 @@ class ActiviteGeneraleCard extends StatelessWidget {
                     
                     const SizedBox(width: 16),
                     
-                    // Titre de l'activité
+                    // Titre de l'activité spécifique
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,27 +109,27 @@ class ActiviteGeneraleCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.green.withOpacity(0.3),
+                          color: Colors.blue.withOpacity(0.3),
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.check_circle_outline,
+                            Icons.task_outlined,
                             size: 14,
-                            color: Colors.green[700],
+                            color: Colors.blue[700],
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Actif',
+                            'Spécifique',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: Colors.green[700],
+                              color: Colors.blue[700],
                             ),
                           ),
                         ],
@@ -140,8 +140,69 @@ class ActiviteGeneraleCard extends StatelessWidget {
                 
                 const SizedBox(height: 16),
                 
-                // Informations du sous-projet
-               
+                // Informations de l'activité générale parent
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.assignment_outlined,
+                        size: 20,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Activité générale parent',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'ID: ${activite.activiteGeneraleId}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Liée',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 
                 // Indicateur de sélection
                 if (isSelected) ...[
@@ -166,7 +227,7 @@ class ActiviteGeneraleCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Activité sélectionnée',
+                          'Activité spécifique sélectionnée',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,

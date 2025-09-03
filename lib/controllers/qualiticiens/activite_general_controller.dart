@@ -4,7 +4,8 @@ import '../../services/core/activite_generale_service.dart';
 import '../../models/core/activite_generale_model.dart';
 
 /// Controller optimisé pour la gestion des activités générales des qualiticiens
-/// Gère les états de chargement, erreurs, données en cache et connectivité
+/// Charge automatiquement les activités générales assignées au qualiticien connecté
+/// Gère les états de chargement, erreurs et données
 class ActiviteGeneralController extends GetxController {
   // Services
   final ActiviteGeneraleService _activiteGeneraleService = Get.find<ActiviteGeneraleService>();
@@ -15,56 +16,38 @@ class ActiviteGeneralController extends GetxController {
   final _errorMessage = ''.obs;
   final _hasError = false.obs;
 
-  // État de sélection du sous-projet
-  final _selectedSousProjetId = Rx<int?>(null);
-  final _selectedSousProjetTitre = ''.obs;
-
   // Getters pour l'accès aux données
   List<ActiviteGenerale> get activitesGenerales => _activitesGenerales;
   bool get isLoading => _isLoading.value;
   String get errorMessage => _errorMessage.value;
   bool get hasError => _hasError.value;
   bool get hasData => _activitesGenerales.isNotEmpty;
-  int? get selectedSousProjetId => _selectedSousProjetId.value;
-  String get selectedSousProjetTitre => _selectedSousProjetTitre.value;
 
   @override
   void onInit() {
     super.onInit();
-    _initializeFromArguments();
     _loadInitialData();
   }
 
-  /// Initialise les données à partir des arguments de navigation
-  void _initializeFromArguments() {
-    final arguments = Get.arguments;
-    if (arguments != null && arguments is Map<String, dynamic>) {
-      _selectedSousProjetId.value = arguments['sousProjetId'];
-      _selectedSousProjetTitre.value = arguments['sousProjetTitre'] ?? '';
-    }
-  }
-
   /// Charge les données initiales
+  /// Charge les activités générales assignées au qualiticien connecté
   Future<void> _loadInitialData() async {
     await fetchActivitesGenerales();
   }
 
   /// Récupère les activités générales depuis l'API
+  /// Récupère TOUJOURS les activités générales liées au qualiticien connecté
   Future<void> fetchActivitesGenerales() async {
     try {
       _setLoadingState(true);
       _clearError();
 
-      List<dynamic> responseData;
-
-      if (_selectedSousProjetId.value != null) {
-        // Récupérer les activités pour un sous-projet spécifique
-        responseData = await _activiteGeneraleService.getActivitesGeneralesBySousProjet(
-          _selectedSousProjetId.value!
-        );
-      } else {
-        // Récupérer toutes les activités du qualiticien
-        responseData = await _activiteGeneraleService.getActivitesGeneralesByQualiticient();
+      // Récupérer toutes les activités générales liées au qualiticien connecté
+      debugPrint('🔍 Récupération activités générales pour qualiticien connecté');
+      final responseData = await _activiteGeneraleService.getActivitesGeneralesByQualiticient();
+      debugPrint('📊 Données reçues du backend : ${responseData.length} éléments');
+      if (responseData.isNotEmpty) {
+        debugPrint('📋 Premier élément reçu : ${responseData.first}');
       }
 
       // Convertir les données en objets ActiviteGenerale
@@ -79,6 +62,9 @@ class ActiviteGeneralController extends GetxController {
         _setEmptyState();
       }
 
+      // Log pour le débogage
+      debugPrint('✅ ${_activitesGenerales.length} activités générales chargées pour le qualiticien');
+
     } catch (e) {
       _handleError('Erreur lors de la récupération des activités générales', e);
     } finally {
@@ -90,20 +76,6 @@ class ActiviteGeneralController extends GetxController {
   Future<void> refreshActivitesGenerales() async {
     _clearError();
     await fetchActivitesGenerales();
-  }
-
-  /// Filtre les activités par sous-projet
-  void filterBySousProjet(int sousProjetId, String sousProjetTitre) {
-    _selectedSousProjetId.value = sousProjetId;
-    _selectedSousProjetTitre.value = sousProjetTitre;
-    fetchActivitesGenerales();
-  }
-
-  /// Supprime le filtre de sous-projet
-  void clearSousProjetFilter() {
-    _selectedSousProjetId.value = null;
-    _selectedSousProjetTitre.value = '';
-    fetchActivitesGenerales();
   }
 
   /// Recherche dans les activités générales
@@ -140,9 +112,7 @@ class ActiviteGeneralController extends GetxController {
 
   /// Définit l'état vide
   void _setEmptyState() {
-    _errorMessage.value = _selectedSousProjetId.value != null
-        ? "Aucune activité générale trouvée pour ce sous-projet"
-        : "Aucune activité générale trouvée";
+    _errorMessage.value = "Aucune activité générale assignée à votre compte qualiticien";
   }
 
   /// Affiche un snackbar d'erreur

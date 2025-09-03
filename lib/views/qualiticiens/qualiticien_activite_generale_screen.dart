@@ -5,6 +5,7 @@ import '../../widgets/activite_generale_card.dart';
 import '../../widgets/error_state_widget.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_widget.dart';
+import 'qualiticien_activite_specifique_screen.dart';
 
 class QualiticiensActiviteGeneraleList extends StatelessWidget {
   final ActiviteGeneralController _controller = Get.put(ActiviteGeneralController());
@@ -42,11 +43,9 @@ class QualiticiensActiviteGeneraleList extends StatelessWidget {
       elevation: 0,
       backgroundColor: mainColor,
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          _controller.selectedSousProjetId != null 
-            ? 'Activités - ${_controller.selectedSousProjetTitre}'
-            : 'Activités Générales',
-          style: const TextStyle(
+        title: const Text(
+          'Activités Générales',
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 18,
@@ -95,14 +94,6 @@ class QualiticiensActiviteGeneraleList extends StatelessWidget {
         ),
       ),
       actions: [
-        // Bouton pour effacer le filtre
-        if (_controller.selectedSousProjetId != null)
-          IconButton(
-            icon: const Icon(Icons.clear_outlined, color: Colors.white),
-            onPressed: _controller.clearSousProjetFilter,
-            tooltip: 'Afficher toutes les activités',
-          ),
-        
         // Indicateur de chargement ou bouton refresh
         Obx(() => _controller.isLoading 
           ? const Padding(
@@ -153,9 +144,7 @@ class QualiticiensActiviteGeneraleList extends StatelessWidget {
         height: 400,
         child: EmptyStateWidget(
           title: 'Aucune activité générale trouvée',
-          subtitle: _controller.selectedSousProjetId != null
-            ? 'Aucune activité n\'est assignée à ce sous-projet.'
-            : 'Aucune activité n\'est assignée à votre compte qualiticien.',
+          subtitle: 'Aucune activité n\'est assignée à votre compte qualiticien.',
           icon: Icons.assignment_outlined,
           onRefresh: _controller.refreshActivitesGenerales,
           refreshText: 'Actualiser',
@@ -235,7 +224,14 @@ class QualiticiensActiviteGeneraleList extends StatelessWidget {
             isSelected: false, // Pas de sélection pour les activités
             primaryColor: mainColor,
             onTap: () {
-              // Fonctionnalité désactivée - ne fait rien lors du clic
+              // Navigation vers la page des activités spécifiques liées à cette activité générale
+              Get.to(
+                () => QualiticiensActiviteSpecifiqueList(),
+                arguments: {
+                  'activiteGeneraleId': activite.id,
+                  'activiteGeneraleTitre': activite.titre,
+                },
+              );
             },
           );
         },

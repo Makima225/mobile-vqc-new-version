@@ -3,8 +3,8 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import '../../config/config.dart';
 import '../auth/auth_service.dart';
 
-class ActiviteGeneraleService extends GetConnect {
-  static ActiviteGeneraleService get to => Get.find<ActiviteGeneraleService>();
+class ActiviteSpecifiqueByActiviteGeneraleService extends GetConnect {
+  static ActiviteSpecifiqueByActiviteGeneraleService get to => Get.find<ActiviteSpecifiqueByActiviteGeneraleService>();
 
   @override
   void onInit() {
@@ -53,7 +53,6 @@ class ActiviteGeneraleService extends GetConnect {
   /// 🔹 Méthode générique pour les appels API avec gestion d'erreurs optimisée
   Future<List<dynamic>> _makeApiCall(String endpoint, {String? debugMessage}) async {
     try {
-      print("🚀 Appel API vers: ${httpClient.baseUrl}$endpoint");
       final response = await get(endpoint);
       
       if (debugMessage != null) {
@@ -62,10 +61,6 @@ class ActiviteGeneraleService extends GetConnect {
 
       if (response.statusCode == 200) {
         final data = response.body;
-        print("✅ Données reçues: ${data is List ? data.length : 1} éléments");
-        if (data is List && data.isNotEmpty) {
-          print("📋 Premier élément: ${data.first}");
-        }
         return data is List ? data : (data != null ? [data] : []);
       } else if (response.statusCode == 401) {
         print("🔒 Token expiré ou invalide - Redirection vers login nécessaire");
@@ -74,7 +69,6 @@ class ActiviteGeneraleService extends GetConnect {
         return [];
       } else {
         print("❌ Erreur ${response.statusCode} : ${response.statusText}");
-        print("📄 Réponse complète: ${response.body}");
         return [];
       }
     } catch (e) {
@@ -83,41 +77,61 @@ class ActiviteGeneraleService extends GetConnect {
     }
   }
 
-  /// 🔹 Récupérer les activités générales liées aux ingénieurs travaux
-  Future<List<dynamic>> getActivitesGenerales() async {
-    return await _makeApiCall(
-      "/activite-generales/ingenieur-travaux/",
-      debugMessage: "Récupération activités générales ingénieurs",
-    );
-  }
-
-  /// 🔹 Récupérer les activités générales liées aux qualiticiens connectés
-  Future<List<dynamic>> getActivitesGeneralesByQualiticient() async {
-    return await _makeApiCall(
-      "/activite-generales/qualiticient/",
-      debugMessage: "Récupération activités générales qualiticiens connectés",
-    );
-  }
-
-  /// 🔹 Récupérer les activités générales pour un sous-projet spécifique
-  Future<List<dynamic>> getActivitesGeneralesBySousProjet(int sousProjetId) async {
-    if (sousProjetId <= 0) {
-      print("❌ ID de sous-projet invalide : $sousProjetId");
+  /// 🔹 Récupérer les activités spécifiques par activité générale
+  Future<List<dynamic>> getActivitesSpecifiquesByActiviteGenerale(int activiteGeneraleId) async {
+    if (activiteGeneraleId <= 0) {
+      print("❌ ID d'activité générale invalide : $activiteGeneraleId");
       return [];
     }
 
     return await _makeApiCall(
-      "/activites-generales/by-sous-projet/$sousProjetId/",
-      debugMessage: "Récupération activités pour sous-projet $sousProjetId",
+      "/activites-specifiques/activite-generale/$activiteGeneraleId/",
+      debugMessage: "Récupération activités spécifiques pour activité générale $activiteGeneraleId",
     );
   }
 
-  /// 🔹 Créer une nouvelle activité générale
-  Future<Map<String, dynamic>?> createActiviteGenerale(Map<String, dynamic> data) async {
+  /// 🔹 Récupérer toutes les activités spécifiques
+  Future<List<dynamic>> getAllActivitesSpecifiques() async {
+    return await _makeApiCall(
+      "/activites-specifiques/list/",
+      debugMessage: "Récupération de toutes les activités spécifiques",
+    );
+  }
+
+  /// 🔹 Récupérer une activité spécifique par ID
+  Future<Map<String, dynamic>?> getActiviteSpecifiqueById(int id) async {
+    if (id <= 0) {
+      print("❌ ID d'activité spécifique invalide : $id");
+      return null;
+    }
+
     try {
-      final response = await post("/activite-generales/", data);
+      final response = await get("/activites-specifiques/$id/");
       
-      print("📡 Création activité générale : ${response.statusCode}");
+      print("📡 Récupération activité spécifique $id : ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        return response.body;
+      } else if (response.statusCode == 401) {
+        final authService = Get.find<AuthService>();
+        await authService.logout();
+        return null;
+      } else {
+        print("❌ Erreur ${response.statusCode} : ${response.statusText}");
+        return null;
+      }
+    } catch (e) {
+      print("⚠️ Exception lors de la récupération : $e");
+      return null;
+    }
+  }
+
+  /// 🔹 Créer une nouvelle activité spécifique
+  Future<Map<String, dynamic>?> createActiviteSpecifique(Map<String, dynamic> data) async {
+    try {
+      final response = await post("/activites-specifiques/", data);
+      
+      print("📡 Création activité spécifique : ${response.statusCode}");
 
       if (response.statusCode == 201) {
         return response.body;
@@ -135,17 +149,17 @@ class ActiviteGeneraleService extends GetConnect {
     }
   }
 
-  /// 🔹 Mettre à jour une activité générale
-  Future<Map<String, dynamic>?> updateActiviteGenerale(int id, Map<String, dynamic> data) async {
+  /// 🔹 Mettre à jour une activité spécifique
+  Future<Map<String, dynamic>?> updateActiviteSpecifique(int id, Map<String, dynamic> data) async {
     if (id <= 0) {
-      print("❌ ID d'activité invalide : $id");
+      print("❌ ID d'activité spécifique invalide : $id");
       return null;
     }
 
     try {
-      final response = await put("/activite-generales/$id/", data);
+      final response = await put("/activites-specifiques/$id/", data);
       
-      print("📡 Mise à jour activité $id : ${response.statusCode}");
+      print("📡 Mise à jour activité spécifique $id : ${response.statusCode}");
 
       if (response.statusCode == 200) {
         return response.body;
@@ -163,17 +177,17 @@ class ActiviteGeneraleService extends GetConnect {
     }
   }
 
-  /// 🔹 Supprimer une activité générale
-  Future<bool> deleteActiviteGenerale(int id) async {
+  /// 🔹 Supprimer une activité spécifique
+  Future<bool> deleteActiviteSpecifique(int id) async {
     if (id <= 0) {
-      print("❌ ID d'activité invalide : $id");
+      print("❌ ID d'activité spécifique invalide : $id");
       return false;
     }
 
     try {
-      final response = await delete("/activite-generales/$id/");
+      final response = await delete("/activites-specifiques/$id/");
       
-      print("📡 Suppression activité $id : ${response.statusCode}");
+      print("📡 Suppression activité spécifique $id : ${response.statusCode}");
 
       if (response.statusCode == 204 || response.statusCode == 200) {
         return true;

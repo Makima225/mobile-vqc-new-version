@@ -3,6 +3,7 @@ import 'auth/auth_service.dart';
 import 'core/sous_projets_service.dart';
 import 'core/profile_picture_service.dart';
 import 'core/activite_generale_service.dart';
+import 'core/activite_specifique_by_activite_generale_service.dart';
 
 class DependencyInjection {
   static Future<void> init() async {
@@ -19,6 +20,9 @@ class DependencyInjection {
     
     // Enregistrement de l'ActiviteGeneraleService
     Get.put<ActiviteGeneraleService>(ActiviteGeneraleService());
+    
+    // Enregistrement de l'ActiviteSpecifiqueByActiviteGeneraleService
+    Get.put<ActiviteSpecifiqueByActiviteGeneraleService>(ActiviteSpecifiqueByActiviteGeneraleService());
     
     print('Services d\'injection de dépendances initialisés');
   }
