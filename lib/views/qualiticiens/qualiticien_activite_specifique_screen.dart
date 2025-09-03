@@ -5,6 +5,7 @@ import '../../widgets/activite_specifique_card.dart';
 import '../../widgets/error_state_widget.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_widget.dart';
+import 'qualiticien_template_list_screen.dart';
 
 class QualiticiensActiviteSpecifiqueList extends StatelessWidget {
   final ActiviteSpecifiqueController _controller = Get.put(ActiviteSpecifiqueController());
@@ -169,12 +170,9 @@ class QualiticiensActiviteSpecifiqueList extends StatelessWidget {
         // Message de rafraîchissement
         _buildRefreshHint(),
         
-        // Informations du filtre actuel
-        if (_controller.selectedActiviteGeneraleId != null)
-          _buildFilterInfo(),
+      
         
-        // Statistiques
-        _buildStatsCard(),
+      
         
         // Liste des activités spécifiques
         _buildActivitesList(),
@@ -221,155 +219,8 @@ class QualiticiensActiviteSpecifiqueList extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterInfo() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            mainColor.withOpacity(0.1),
-            mainColor.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: mainColor.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.filter_list_outlined,
-            color: mainColor,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Filtre actif',
-                  style: TextStyle(
-                    color: mainColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  'Activité générale: ${_controller.selectedActiviteGeneraleTitre}',
-                  style: TextStyle(
-                    color: mainColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton.icon(
-            onPressed: _controller.clearActiviteGeneraleFilter,
-            icon: Icon(Icons.clear, size: 16, color: mainColor),
-            label: Text(
-              'Effacer',
-              style: TextStyle(
-                color: mainColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+ 
 
-  Widget _buildStatsCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.2),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: mainColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              Icons.task_alt,
-              color: mainColor,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Activités spécifiques',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${_controller.activitesSpecifiques.length} activité(s)',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_controller.selectedActiviteGeneraleId != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: mainColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: mainColor.withOpacity(0.3),
-                ),
-              ),
-              child: Text(
-                'Filtrées',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: mainColor,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildActivitesList() {
     return RefreshIndicator(
@@ -388,8 +239,16 @@ class QualiticiensActiviteSpecifiqueList extends StatelessWidget {
             isSelected: false, // Pas de sélection pour les activités spécifiques
             primaryColor: mainColor,
             onTap: () {
-              // Navigation vers les fiches de contrôle ou autres fonctionnalités futures
-              _showActiviteSpecifiqueActions(activite);
+              // Navigation directe vers la page des templates
+              Get.to(
+                () => QualiticiensTemplateListScreen(),
+                arguments: {
+                  'activiteSpecifiqueId': activite.id,
+                  'activiteSpecifiqueTitre': activite.titre,
+                },
+                transition: Transition.rightToLeft,
+                duration: const Duration(milliseconds: 300),
+              );
             },
           );
         },
@@ -404,85 +263,6 @@ class QualiticiensActiviteSpecifiqueList extends StatelessWidget {
       foregroundColor: Colors.white,
       tooltip: 'Rafraîchir la liste',
       child: const Icon(Icons.refresh),
-    );
-  }
-
-  void _showActiviteSpecifiqueActions(activite) {
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              activite.titre,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Icon(Icons.info_outline, color: mainColor),
-              title: const Text('Voir les détails'),
-              onTap: () {
-                Get.back();
-                _showActiviteDetails(activite);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.assignment_outlined, color: mainColor),
-              title: const Text('Voir les fiches de contrôle'),
-              onTap: () {
-                Get.back();
-                Get.snackbar(
-                  'Information',
-                  'Fonctionnalité en cours de développement',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showActiviteDetails(activite) {
-    Get.dialog(
-      AlertDialog(
-        title: Text(activite.titre),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('ID: ${activite.id}'),
-            const SizedBox(height: 8),
-            Text('Activité générale ID: ${activite.activiteGeneraleId}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Fermer'),
-          ),
-        ],
-      ),
     );
   }
 }
