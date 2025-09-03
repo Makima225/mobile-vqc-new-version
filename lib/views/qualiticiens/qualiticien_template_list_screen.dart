@@ -6,6 +6,7 @@ import '../../widgets/error_state_widget.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_widget.dart';
 import '../../models/core/template_model.dart';
+import 'qualiticien_template_remplissage_screen.dart';
 
 class QualiticiensTemplateListScreen extends StatelessWidget {
   final TemplateController _controller = Get.put(TemplateController());
@@ -245,7 +246,7 @@ class QualiticiensTemplateListScreen extends StatelessWidget {
                 template: template,
                 isSelected: isSelected,
                 primaryColor: mainColor,
-                onTap: () => _controller.selectTemplate(template),
+                onTap: () => _navigateToTemplateRemplissage(template),
                 onDownload: () => _downloadTemplate(template),
                 onEdit: () => _editTemplate(template),
                 onDelete: () => _deleteTemplate(template),
@@ -286,6 +287,14 @@ class QualiticiensTemplateListScreen extends StatelessWidget {
           child: const Icon(Icons.refresh, color: Colors.white),
           tooltip: 'Actualiser les templates',
         ));
+  }
+
+  // Navigation vers la page de remplissage
+  void _navigateToTemplateRemplissage(TemplateFichecontrole template) {
+    Get.to(
+      () => const QualiticiensTemplateRemplissageScreen(),
+      arguments: template,
+    );
   }
 
   // Actions sur les templates

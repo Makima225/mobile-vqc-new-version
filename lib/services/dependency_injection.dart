@@ -5,6 +5,7 @@ import 'core/profile_picture_service.dart';
 import 'core/activite_generale_service.dart';
 import 'core/activite_specifique_by_activite_generale_service.dart';
 import 'core/template_by_activite_specifique_service.dart';
+import 'core/entete_by_template_service.dart';
 
 class DependencyInjection {
   static Future<void> init() async {
@@ -27,6 +28,9 @@ class DependencyInjection {
     
     // Enregistrement du TemplateFichecontroleByActiviteSpecifiqueService
     Get.put<TemplateFichecontroleByActiviteSpecifiqueService>(TemplateFichecontroleByActiviteSpecifiqueService());
+    
+    // Enregistrement du EnteteByTemplateService
+    Get.put<EnteteByTemplateService>(EnteteByTemplateService());
     
     print('Services d\'injection de dépendances initialisés');
   }
