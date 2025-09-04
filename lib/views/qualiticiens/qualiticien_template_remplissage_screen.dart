@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/core/template_model.dart';
 import '../../models/core/entete_model.dart';
 import '../../services/core/entete_by_template_service.dart';
@@ -31,12 +33,99 @@ class _QualiticiensTemplateRemplissageScreenState
   
   int _currentStep = 0;
   Map<String, dynamic> _schemaData = {};
+  
+  // Gestion photo globale obligatoire
+  final ImagePicker _picker = ImagePicker();
+  File? _photoObligatoire;
+  
+  // Gestion des anomalies (optionnel)
+  List<Map<String, dynamic>> _anomalies = [];
 
   @override
   void initState() {
     super.initState();
-    _enteteService = EnteteByTemplateService.to;
+    _enteteService = Get.find<EnteteByTemplateService>();
     _loadEntetes();
+  }
+
+  // Méthode pour prendre une photo obligatoire
+  Future<void> _prendrePhotoObligatoire() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      
+      if (photo != null) {
+        setState(() {
+          _photoObligatoire = File(photo.path);
+        });
+        _showSuccessSnackbar('Photo prise avec succès');
+      }
+    } catch (e) {
+      _showErrorSnackbar('Erreur lors de la prise de photo: $e');
+    }
+  }
+
+  // Méthode pour ajouter une anomalie
+  void _ajouterAnomalie(Map<String, dynamic> anomalie) {
+    setState(() {
+      _anomalies.add(anomalie);
+    });
+  }
+
+  // Callback pour recevoir les données du SchemaTableWidget
+  void _onSchemaDataChanged(Map<String, dynamic> data) {
+    setState(() {
+      _schemaData = data;
+    });
+  }
+
+  // Méthode pour synchroniser les données avant envoi
+  void _synchronizeTableData() {
+    print('🔄 Synchronisation des données de tableau...');
+    
+    // Synchroniser de 'elements' vers 'tables' pour être sûr
+    if (_schemaData['elements'] is List && _schemaData['tables'] is List) {
+      List elements = _schemaData['elements'];
+      List tables = _schemaData['tables'];
+      
+      for (var element in elements) {
+        if (element is Map && element['type'] == 'table' && element['rows'] is List) {
+          // Trouver le tableau correspondant dans 'tables'
+          for (var table in tables) {
+            if (table is Map && table['rows'] is List) {
+              List elementRows = element['rows'];
+              List tableRows = table['rows'];
+              
+              // Synchroniser les valeurs
+              for (int rowIndex = 0; rowIndex < elementRows.length && rowIndex < tableRows.length; rowIndex++) {
+                if (elementRows[rowIndex] is List && tableRows[rowIndex] is List) {
+                  List elementRow = elementRows[rowIndex];
+                  List tableRow = tableRows[rowIndex];
+                  
+                  for (int colIndex = 0; colIndex < elementRow.length && colIndex < tableRow.length; colIndex++) {
+                    if (elementRow[colIndex] is Map && elementRow[colIndex]['value'] != null) {
+                      String newValue = elementRow[colIndex]['value'].toString();
+                      if (tableRow[colIndex] != newValue) {
+                        tableRow[colIndex] = newValue;
+                        print('🔄 Sync: Row $rowIndex, Col $colIndex = "$newValue"');
+                      }
+                    }
+                  }
+                }
+              }
+              break; // Sortir après avoir trouvé le premier tableau
+            }
+          }
+          break; // Sortir après avoir traité le premier élément table
+        }
+      }
+    }
+    
+    print('✅ Synchronisation terminée');
   }
 
   Future<void> _loadEntetes() async {
@@ -111,7 +200,62 @@ class _QualiticiensTemplateRemplissageScreenState
   }
 
   void _onCellChanged(int tableIndex, int rowIndex, int colIndex, String value) {
-    // Logique de sauvegarde des modifications des cellules
+    // CORRECTION: Sauvegarder sans provoquer de setState() qui redessine tout
+    print('🔄 Cell changed - Table: $tableIndex, Row: $rowIndex, Col: $colIndex, Value: "$value"');
+    
+    // PAS de setState() ici pour éviter les reconstructions intempestives
+    // Juste mettre à jour les données en arrière-plan
+    
+    // Initialiser la structure si nécessaire
+    if (_schemaData['elements'] == null) {
+      _schemaData['elements'] = [];
+    }
+    
+    // Mettre à jour dans la section 'elements' (structure détaillée)
+    if (_schemaData['elements'] is List) {
+      List elements = _schemaData['elements'];
+      
+      // Parcourir les éléments pour trouver le bon tableau
+      for (var element in elements) {
+        if (element is Map && element['type'] == 'table') {
+          List? rows = element['rows'];
+          if (rows != null && rowIndex < rows.length) {
+            List? row = rows[rowIndex];
+            if (row != null && colIndex < row.length) {
+              // Mettre à jour la valeur de la cellule dans 'elements'
+              if (row[colIndex] is Map) {
+                row[colIndex]['value'] = value;
+                print('✅ Cellule mise à jour dans elements: ${row[colIndex]}');
+              }
+            }
+          }
+          break; // Sortir après avoir trouvé le premier tableau
+        }
+      }
+    }
+    
+    // NOUVEAU: Mettre à jour AUSSI dans la section 'tables' (structure simplifiée)
+    if (_schemaData['tables'] == null) {
+      _schemaData['tables'] = [];
+    }
+    
+    if (_schemaData['tables'] is List) {
+      List tables = _schemaData['tables'];
+      if (tableIndex < tables.length && tables[tableIndex] is Map) {
+        Map table = tables[tableIndex];
+        if (table['rows'] is List) {
+          List rows = table['rows'];
+          if (rowIndex < rows.length && rows[rowIndex] is List) {
+            List row = rows[rowIndex];
+            if (colIndex < row.length) {
+              // Mettre à jour la valeur dans 'tables'
+              row[colIndex] = value;
+              print('✅ Cellule mise à jour dans tables: Row $rowIndex, Col $colIndex = "$value"');
+            }
+          }
+        }
+      }
+    }
   }
 
   void _nextStep() {
@@ -322,11 +466,13 @@ class _QualiticiensTemplateRemplissageScreenState
               child: SchemaTableWidget(
                 tableData: tableData,
                 tableIndex: tableIndex,
-                ficheControleId: template?.id ?? 0, // ID de la fiche de contrôle
+                ficheControleId: template?.id ?? 0,
                 onCellChanged: _onCellChanged,
               ),
             );
           }).toList(),
+          const SizedBox(height: 24),
+          _buildPhotoSection(),
         ],
       ),
     );
@@ -339,8 +485,8 @@ class _QualiticiensTemplateRemplissageScreenState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            QualiticiensTemplateRemplissageScreen.mainColor,
-            QualiticiensTemplateRemplissageScreen.mainColor.withValues(alpha: 0.8),
+            Colors.deepPurple,
+            Colors.deepPurple.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -379,6 +525,117 @@ class _QualiticiensTemplateRemplissageScreenState
     );
   }
 
+  Widget _buildPhotoSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey.shade50,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.camera_alt, color: Colors.deepPurple),
+              SizedBox(width: 8),
+              Text(
+                'Photo obligatoire',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_photoObligatoire != null) ...[
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  _photoObligatoire!,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Photo prise avec succès',
+                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _prendrePhotoObligatoire,
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Reprendre'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.orange),
+                ),
+              ],
+            ),
+          ] else ...[
+            Container(
+              height: 120,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.red.shade300,
+                  style: BorderStyle.solid,
+                ),
+                color: Colors.red.shade50,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.camera_alt_outlined, 
+                       size: 40, 
+                       color: Colors.red.shade400),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Photo obligatoire requise',
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _prendrePhotoObligatoire,
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Prendre une photo'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptySchemaView() {
     return Container(
       width: double.infinity,
@@ -408,25 +665,50 @@ class _QualiticiensTemplateRemplissageScreenState
   }
 
   Future<void> _goToSignature() async {
+    // Récupérer le template depuis les arguments
     final TemplateFichecontrole? template = Get.arguments as TemplateFichecontrole?;
+    
     if (template == null) {
-      _showErrorSnackbar('Template introuvable');
+      _showErrorSnackbar('Données du template introuvables');
       return;
     }
     
-    // Préparer les données du formulaire pour la signature
-    Map<String, dynamic> formData = {
-      'template_id': template.id,
-      'template_name': template.nom,
-      'entetes': _enteteValues,
-      'schema_data': _schemaData,
-      'filled_timestamp': DateTime.now().toIso8601String(),
-    };
+    // NOUVEAU: Synchroniser les données avant envoi
+    _synchronizeTableData();
     
-    print('📋 Redirection vers signature avec les données: $formData');
+    // CORRECTION 1: Vérifier et logger l'ID de l'activité spécifique
+    print('🔍 DÉBOGAGE activiteSpecifiqueId:');
+    print('  Template ID: ${template.id}');
+    print('  Template activiteSpecifiqueId: ${template.activiteSpecifiqueId}');
     
-    // Naviguer vers l'écran de signature
-    Get.to(() => SignatureScreen(formData: formData));
+    // Utiliser l'activiteSpecifiqueId du template
+    int activiteSpecifiqueId = template.activiteSpecifiqueId;
+    
+    // CORRECTION 2: Collecter les vraies données du tableau depuis les widgets
+    print('🔍 DÉBOGAGE données tableau:');
+    print('  Schema data après collecte: ${_schemaData.toString().substring(0, 500)}...');
+    
+    // Convertir _enteteValues (Map<int, String>) en Map<String, String>
+    Map<String, String> enteteValuesString = {};
+    _enteteValues.forEach((key, value) {
+      enteteValuesString[key.toString()] = value;
+    });
+    
+    print('📋 Redirection vers signature avec les données');
+    print('  ✅ Template: ${template.nom}');
+    print('  ✅ ActiviteSpecifiqueId: $activiteSpecifiqueId');
+    print('  ✅ Entêtes: ${enteteValuesString.length} valeurs');
+    print('  ✅ Photo: ${_photoObligatoire != null ? "Présente" : "Manquante"}');
+    
+    // Naviguer vers l'écran de signature avec tous les paramètres requis
+    Get.to(() => SignatureScreen(
+      template: template,
+      activiteSpecifiqueId: activiteSpecifiqueId,
+      enteteValues: enteteValuesString,
+      schemaData: _schemaData,
+      photoObligatoire: _photoObligatoire,
+      anomalies: _anomalies,
+    ));
   }
 
   void _showErrorSnackbar(String message) {

@@ -1,14 +1,27 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../controllers/core/fiche_controle_controller.dart';
+import '../../models/core/template_model.dart';
 
 class SignatureScreen extends StatefulWidget {
-  final Map<String, dynamic> formData;
+  final TemplateFichecontrole template;
+  final int activiteSpecifiqueId;
+  final Map<String, String> enteteValues;
+  final Map<String, dynamic> schemaData;
+  final File? photoObligatoire; // Photo du bouton "Prendre une photo"
+  final List<Map<String, dynamic>>? anomalies; // Anomalies optionnelles
 
   const SignatureScreen({
     super.key,
-    required this.formData,
+    required this.template,
+    required this.activiteSpecifiqueId,
+    required this.enteteValues,
+    required this.schemaData,
+    this.photoObligatoire,
+    this.anomalies,
   });
 
   @override
@@ -17,6 +30,7 @@ class SignatureScreen extends StatefulWidget {
 
 class _SignatureScreenState extends State<SignatureScreen> {
   final GlobalKey<SignaturePainterState> _signatureKey = GlobalKey<SignaturePainterState>();
+  final FicheControleController _ficheController = Get.put(FicheControleController());
   bool _isSignatureEmpty = true;
 
   @override
@@ -99,7 +113,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
                         child: Row(
                           children: [
                             Icon(Icons.edit, color: Colors.grey[600], size: 20),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 5),
                             Text(
                               'Zone de signature',
                               style: TextStyle(
@@ -136,7 +150,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             
             // Boutons d'action
             Row(
@@ -161,23 +175,38 @@ class _SignatureScreenState extends State<SignatureScreen> {
                 // Bouton Terminer
                 Expanded(
                   flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: _isSignatureEmpty ? null : _finishForm,
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: const Text(
-                      'Terminer le formulaire',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                  child: Obx(() => ElevatedButton.icon(
+                    onPressed: (_isSignatureEmpty || _ficheController.isSubmitting.value) 
+                        ? null 
+                        : _finishForm,
+                    icon: _ficheController.isSubmitting.value
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.check_circle_outline),
+                    label: Text(
+                      _ficheController.isSubmitting.value 
+                          ? 'Envoi en cours...' 
+                          : 'Terminer le formulaire',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isSignatureEmpty ? Colors.grey[400] : Colors.green[600],
+                      backgroundColor: (_isSignatureEmpty || _ficheController.isSubmitting.value) 
+                          ? Colors.grey[400] 
+                          : Colors.green[600],
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: _isSignatureEmpty ? 0 : 3,
+                      elevation: (_isSignatureEmpty || _ficheController.isSubmitting.value) ? 0 : 3,
                     ),
-                  ),
+                  )),
                 ),
               ],
             ),
@@ -206,41 +235,74 @@ class _SignatureScreenState extends State<SignatureScreen> {
     }
 
     try {
-      // Récupérer la signature comme image
+      // Vérification de la photo obligatoire
+      if (widget.photoObligatoire == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Une photo est obligatoire pour valider le formulaire'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+
+      // Récupérer la signature comme image et la sauvegarder temporairement
       final Uint8List? signatureBytes = await _signatureKey.currentState?.toImage();
       
-      if (signatureBytes != null) {
-        // Ajouter la signature aux données du formulaire
-        final completeFormData = {
-          ...widget.formData,
-          'signature': signatureBytes,
-          'signature_timestamp': DateTime.now().toIso8601String(),
-          'status': 'completed',
-        };
+      if (signatureBytes == null) {
+        throw Exception('Impossible de générer la signature');
+      }
 
-        // Simulation de sauvegarde
-        await Future.delayed(const Duration(seconds: 1));
-        
+      // Créer un fichier temporaire pour la signature
+      final tempDir = Directory.systemTemp;
+      final signatureFile = File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png');
+      await signatureFile.writeAsBytes(signatureBytes);
+
+      print('📝 Démarrage de la soumission du formulaire...');
+      print('📋 Template: ${widget.template.nom}');
+      print('📷 Photo obligatoire: ${widget.photoObligatoire!.path}');
+      print('✍️ Signature créée: ${signatureFile.path}');
+
+      // Validation et soumission via le controller
+      final success = await _ficheController.submitFormulaire(
+        template: widget.template,
+        activiteSpecifiqueId: widget.activiteSpecifiqueId,
+        enteteValues: widget.enteteValues,
+        schemaData: widget.schemaData,
+        photoObligatoire: widget.photoObligatoire!,
+        signatureFile: signatureFile,
+        anomalies: widget.anomalies,
+      );
+
+      if (success) {
+        // Nettoyer le fichier temporaire
+        try {
+          await signatureFile.delete();
+        } catch (e) {
+          print('⚠️ Impossible de supprimer le fichier temporaire: $e');
+        }
+
         // Afficher une confirmation
-        Get.dialog(
+        await Get.dialog(
           AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.green[600], size: 28),
                 const SizedBox(width: 12),
-                const Text('Formulaire terminé !'),
+                const Text('Formulaire envoyé !'),
               ],
             ),
             content: const Text(
-              'Votre formulaire a été signé et sauvegardé avec succès.',
+              'Votre fiche de contrôle a été créée et envoyée avec succès au serveur.',
               style: TextStyle(fontSize: 16),
             ),
             actions: [
               ElevatedButton(
                 onPressed: () {
                   Get.back(); // Fermer le dialog
-                  Get.back(); // Retourner à l'écran précédent
+                  Get.back(); // Retourner à l'écran de remplissage
                   Get.back(); // Retourner à la liste des templates
                 },
                 style: ElevatedButton.styleFrom(
@@ -250,22 +312,28 @@ class _SignatureScreenState extends State<SignatureScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('OK'),
+                child: const Text('Retour à la liste'),
               ),
             ],
           ),
           barrierDismissible: false,
         );
-        
-        print('📋 Formulaire terminé avec succès: $completeFormData');
-        
       }
+      
     } catch (e) {
       print('❌ Erreur lors de la finalisation: $e');
+      
+      // Afficher l'erreur à l'utilisateur
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Erreur lors de la sauvegarde'),
+        SnackBar(
+          content: Text('❌ Erreur: ${e.toString()}'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Réessayer',
+            textColor: Colors.white,
+            onPressed: () => _finishForm(),
+          ),
         ),
       );
     }
@@ -327,7 +395,7 @@ class SignaturePainterState extends State<SignaturePainter> {
     
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final size = context.size ?? const Size(400, 200);
+    final size = context.size ?? const Size(300, 200);
     
     // Dessiner un fond blanc
     canvas.drawRect(

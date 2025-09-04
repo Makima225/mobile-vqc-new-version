@@ -42,14 +42,10 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
         String value = colIndex < rows[rowIndex].length ? rows[rowIndex][colIndex] : '';
         
         _controllers[controllerKey] = TextEditingController(text: value);
-        _controllers[controllerKey]!.addListener(() {
-          widget.onCellChanged(
-            widget.tableIndex,
-            rowIndex,
-            colIndex,
-            _controllers[controllerKey]!.text,
-          );
-        });
+        
+        // CORRECTION: Ne sauvegarder que quand l'utilisateur a fini de saisir (perte de focus)
+        // Au lieu d'addListener qui se déclenche à chaque caractère
+        // Pas de listener ici, on sauvegarde seulement sur onChanged du TextField
       }
     }
   }
@@ -62,8 +58,19 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
           List<String> stringRow = [];
           for (var cell in row) {
             if (cell is Map<String, dynamic>) {
-              String cellValue = cell['text']?.toString() ?? cell['value']?.toString() ?? '';
+              // CORRECTION: Prioriser 'value' pour les cellules input, puis 'text'
+              String cellValue = '';
+              if (cell['type'] == 'input') {
+                // Pour les cellules input, utiliser 'value' (données saisies)
+                cellValue = cell['value']?.toString() ?? '';
+              } else {
+                // Pour les cellules text, utiliser 'text' (contenu statique)
+                cellValue = cell['text']?.toString() ?? '';
+              }
               stringRow.add(cellValue);
+              
+              // Log pour déboguer
+              print('🔍 Cellule extraite: type=${cell['type']}, value="${cell['value']}", text="${cell['text']}" → résultat="$cellValue"');
             } else {
               stringRow.add(cell?.toString() ?? '');
             }
@@ -288,6 +295,14 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
       onChanged: (String? newValue) {
         if (newValue != null) {
           _controllers[controllerKey]!.text = newValue;
+          
+          // AJOUT: Notifier le parent comme pour les TextFields
+          final parts = controllerKey.split('_');
+          if (parts.length >= 3) {
+            final rowIndex = int.tryParse(parts[1]) ?? 0;
+            final colIndex = int.tryParse(parts[2]) ?? 0;
+            widget.onCellChanged(0, rowIndex, colIndex, newValue);
+          }
         }
       },
     );
@@ -330,12 +345,25 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
       onChanged: (String? newValue) {
         if (newValue != null) {
           _controllers[controllerKey]!.text = newValue;
+          
+          // AJOUT: Notifier le parent comme pour les TextFields
+          final parts = controllerKey.split('_');
+          if (parts.length >= 3) {
+            final rowIndex = int.tryParse(parts[1]) ?? 0;
+            final colIndex = int.tryParse(parts[2]) ?? 0;
+            widget.onCellChanged(0, rowIndex, colIndex, newValue);
+          }
         }
       },
     );
   }
 
   Widget _buildTextInput(String controllerKey) {
+    // Extraire les index de la clé du controller
+    List<String> parts = controllerKey.split('_');
+    int rowIndex = int.parse(parts[1]);
+    int colIndex = int.parse(parts[2]);
+    
     return TextField(
       controller: _controllers[controllerKey],
       decoration: InputDecoration(
@@ -350,6 +378,16 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
       ),
       style: const TextStyle(fontSize: 14),
       textAlign: TextAlign.center,
+      // CORRECTION: Sauvegarder seulement quand l'utilisateur a fini de modifier
+      onChanged: (value) {
+        // Appeler le callback parent pour sauvegarder les données
+        widget.onCellChanged(
+          widget.tableIndex,
+          rowIndex,
+          colIndex,
+          value,
+        );
+      },
     );
   }
 
