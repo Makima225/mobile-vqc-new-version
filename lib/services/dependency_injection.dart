@@ -6,6 +6,7 @@ import 'core/activite_generale_service.dart';
 import 'core/activite_specifique_by_activite_generale_service.dart';
 import 'core/template_by_activite_specifique_service.dart';
 import 'core/entete_by_template_service.dart';
+import 'core/anomalie_service.dart';
 
 class DependencyInjection {
   static Future<void> init() async {
@@ -31,6 +32,9 @@ class DependencyInjection {
     
     // Enregistrement du EnteteByTemplateService
     Get.put<EnteteByTemplateService>(EnteteByTemplateService());
+    
+    // Enregistrement du AnomalieService
+    Get.put<AnomalieService>(AnomalieService());
     
     print('Services d\'injection de dépendances initialisés');
   }

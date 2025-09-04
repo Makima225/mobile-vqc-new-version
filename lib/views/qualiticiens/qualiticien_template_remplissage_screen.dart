@@ -300,6 +300,7 @@ class _QualiticiensTemplateRemplissageScreenState
   }
 
   Widget _buildSchemaStep() {
+    final TemplateFichecontrole? template = Get.arguments as TemplateFichecontrole?;
     List<Map<String, dynamic>> tables = SchemaUtils.extractSimpleTables(_schemaData);
     
     if (tables.isEmpty) {
@@ -320,6 +321,7 @@ class _QualiticiensTemplateRemplissageScreenState
               child: SchemaTableWidget(
                 tableData: tableData,
                 tableIndex: tableIndex,
+                ficheControleId: template?.id ?? 0, // ID de la fiche de contrôle
                 onCellChanged: _onCellChanged,
               ),
             );

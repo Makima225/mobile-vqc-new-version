@@ -1,14 +1,19 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'signaler_anomalie_dialog.dart';
 
 class SchemaTableWidget extends StatefulWidget {
   final Map<String, dynamic> tableData;
   final int tableIndex;
+  final int ficheControleId;
   final Function(int tableIndex, int rowIndex, int colIndex, String value) onCellChanged;
 
   const SchemaTableWidget({
     super.key,
     required this.tableData,
     required this.tableIndex,
+    required this.ficheControleId,
     required this.onCellChanged,
   });
 
@@ -18,6 +23,8 @@ class SchemaTableWidget extends StatefulWidget {
 
 class _SchemaTableWidgetState extends State<SchemaTableWidget> {
   final Map<String, TextEditingController> _controllers = {};
+  final ImagePicker _picker = ImagePicker();
+  final List<File> _capturedPhotos = []; // Liste des photos prises
 
   @override
   void initState() {
@@ -89,6 +96,8 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
         children: [
           _buildTableHeader(),
           _buildTableContent(headers, rows),
+          _buildAnomalieButton(),
+          if (_capturedPhotos.isNotEmpty) _buildPhotosSection(),
         ],
       ),
     );
@@ -313,6 +322,222 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
     } else {
       return Colors.black;
     }
+  }
+
+  Widget _buildAnomalieButton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Bouton Signaler anomalie
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => _showAnomalieDialog(),
+              icon: const Icon(Icons.warning_outlined, size: 20),
+              label: const Text(
+                'Signaler une anomalie',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Bouton Prendre une photo
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => _prendrePhoto(),
+              icon: const Icon(Icons.camera_alt_outlined, size: 20),
+              label: const Text(
+                'Prendre une photo',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Section d'affichage des photos capturées
+  Widget _buildPhotosSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.photo_camera, color: Colors.blue[700], size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Photos capturées (${_capturedPhotos.length})',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue[700],
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _capturedPhotos.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Stack(
+                    children: [
+                      // Image
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          _capturedPhotos[index],
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      // Bouton de suppression
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => _supprimerPhoto(index),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAnomalieDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return SignalerAnomalieDialog(
+          ficheControleId: widget.ficheControleId,
+          tableIndex: widget.tableIndex,
+          primaryColor: Colors.orange[600]!,
+        );
+      },
+    );
+
+    // Si l'anomalie a été signalée avec succès, on peut faire des actions supplémentaires
+    if (result == true) {
+      // Par exemple, rafraîchir la liste des anomalies ou autre action
+      print('✅ Anomalie signalée pour le tableau ${widget.tableIndex}');
+    }
+  }
+
+  /// Prendre une photo avec la caméra
+  Future<void> _prendrePhoto() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (photo != null) {
+        final File photoFile = File(photo.path);
+        setState(() {
+          _capturedPhotos.add(photoFile);
+        });
+        
+        // Affichage d'un message de confirmation
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('📸 Photo ajoutée (${_capturedPhotos.length} photo(s))'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur lors de la prise de photo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Erreur lors de la prise de photo'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Supprimer une photo de la liste
+  void _supprimerPhoto(int index) {
+    setState(() {
+      _capturedPhotos.removeAt(index);
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🗑️ Photo supprimée (${_capturedPhotos.length} photo(s) restante(s))'),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
