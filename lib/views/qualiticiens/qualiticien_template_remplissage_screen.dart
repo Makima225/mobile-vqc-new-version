@@ -8,6 +8,7 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/error_state_widget.dart';
 import '../../widgets/schema_table_widget.dart';
 import '../../utils/schema_utils.dart';
+import 'signature_screen.dart';
 
 class QualiticiensTemplateRemplissageScreen extends StatefulWidget {
   static const Color mainColor = Colors.deepPurple;
@@ -287,12 +288,12 @@ class _QualiticiensTemplateRemplissageScreenState
             ),
           const SizedBox(width: 12),
           ElevatedButton(
-            onPressed: details.stepIndex == 1 ? _saveAndFinish : _nextStep,
+            onPressed: details.stepIndex == 1 ? _goToSignature : _nextStep,
             style: ElevatedButton.styleFrom(
               backgroundColor: QualiticiensTemplateRemplissageScreen.mainColor,
               foregroundColor: Colors.white,
             ),
-            child: Text(details.stepIndex == 1 ? 'Sauvegarder' : 'Suivant'),
+            child: Text(details.stepIndex == 1 ? 'Suivant' : 'Suivant'),
           ),
         ],
       ),
@@ -406,26 +407,26 @@ class _QualiticiensTemplateRemplissageScreenState
     );
   }
 
-  Future<void> _saveAndFinish() async {
+  Future<void> _goToSignature() async {
     final TemplateFichecontrole? template = Get.arguments as TemplateFichecontrole?;
     if (template == null) {
       _showErrorSnackbar('Template introuvable');
       return;
     }
     
-    // Préparer les données à sauvegarder
-    Map<String, dynamic> dataToSave = {
+    // Préparer les données du formulaire pour la signature
+    Map<String, dynamic> formData = {
       'template_id': template.id,
+      'template_name': template.nom,
       'entetes': _enteteValues,
       'schema_data': _schemaData,
-      'timestamp': DateTime.now().toIso8601String(),
+      'filled_timestamp': DateTime.now().toIso8601String(),
     };
     
-    // Utiliser les données pour la sauvegarde
-    print('📊 Données préparées: $dataToSave');
+    print('📋 Redirection vers signature avec les données: $formData');
     
-    _showSuccessSnackbar('Données sauvegardées avec succès');
-    Get.back();
+    // Naviguer vers l'écran de signature
+    Get.to(() => SignatureScreen(formData: formData));
   }
 
   void _showErrorSnackbar(String message) {

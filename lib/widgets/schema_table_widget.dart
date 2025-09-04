@@ -144,7 +144,7 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
         scrollDirection: Axis.horizontal,
         child: DataTable(
           border: TableBorder.all(color: Colors.grey[300]!, width: 1),
-          columnSpacing: 20,
+          columnSpacing: 30,
           headingRowColor: WidgetStateProperty.all(Colors.blue[50]),
           columns: headers.map((header) {
             return DataColumn(
@@ -185,26 +185,71 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
   Widget _buildEditableCell(String value, int rowIndex, int colIndex, String header) {
     String controllerKey = '${widget.tableIndex}_${rowIndex}_$colIndex';
     
+    // ⚠️ RÈGLE IMPORTANTE : Si la cellule a déjà du texte (valeur prédéfinie), 
+    // elle doit être en lecture seule (read-only)
+    bool isReadOnly = value.isNotEmpty && value.trim().isNotEmpty;
+    
     Widget inputWidget;
     
-    // Détection automatique des dropdowns avec "/"
-    if (header.contains('/')) {
-      List<String> options = _extractOptionsFromHeader(header);
-      inputWidget = _buildDynamicDropdown(controllerKey, value, options);
-    }
-    // Dropdown pour moyens de contrôle
-    else if (header.toLowerCase().contains('contrôle') || header.toLowerCase().contains('controle')) {
-      inputWidget = _buildControlDropdown(controllerKey, value);
-    }
-    // TextField normal
-    else {
-      inputWidget = _buildTextInput(controllerKey);
+    if (isReadOnly) {
+      // 📖 Cellule en lecture seule - Affichage uniquement
+      inputWidget = _buildReadOnlyCell(value);
+    } else {
+      // ✏️ Cellule modifiable - Saisie utilisateur possible
+      
+      // Détection automatique des dropdowns avec "/"
+      if (header.contains('/')) {
+        List<String> options = _extractOptionsFromHeader(header);
+        inputWidget = _buildDynamicDropdown(controllerKey, value, options);
+      }
+      // Dropdown pour moyens de contrôle
+      else if (header.toLowerCase().contains('contrôle') || header.toLowerCase().contains('controle')) {
+        inputWidget = _buildControlDropdown(controllerKey, value);
+      }
+      // TextField normal
+      else {
+        inputWidget = _buildTextInput(controllerKey);
+      }
     }
     
     return Container(
       constraints: const BoxConstraints(minWidth: 150, minHeight: 45),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: inputWidget,
+    );
+  }
+
+  /// Widget pour afficher une cellule en lecture seule (read-only)
+  Widget _buildReadOnlyCell(String value) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[100], // Fond gris clair pour indiquer lecture seule
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      width: double.infinity,
+      child: Row(
+        children: [
+          Icon(
+            Icons.lock_outline, 
+            size: 16, 
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
