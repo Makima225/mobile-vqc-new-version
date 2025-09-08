@@ -533,7 +533,7 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
   }
 
   Future<void> _showAnomalieDialog() async {
-    final result = await showDialog<bool>(
+    final result = await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
@@ -545,17 +545,9 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
       },
     );
 
-    // Si l'anomalie a été signalée avec succès, on peut faire des actions supplémentaires
-    if (result == true) {
-      print('✅ Anomalie signalée pour le tableau ${widget.tableIndex}');
-      // Construire un objet anomalie minimal à remonter
-      final anomalieData = {
-        'table_index': widget.tableIndex,
-        'fiche_controle_id': widget.ficheControleId,
-        'created_at': DateTime.now().toIso8601String(),
-        // On peut ajouter d'autres champs si le dialog renvoie des infos plus tard
-      };
-      widget.onAnomalieAdded?.call(anomalieData);
+    // Si une anomalie a été signalée, on la transmet à la callback
+    if (result != null && result is Map<String, dynamic>) {
+      widget.onAnomalieAdded?.call(result);
     }
   }
 

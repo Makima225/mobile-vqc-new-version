@@ -344,25 +344,21 @@ class _SignalerAnomalieDialogState extends State<SignalerAnomalieDialog> {
       _isLoading = true;
     });
 
-    try {
-      final AnomalieService anomalieService = AnomalieService.to;
-      
-      await anomalieService.signalerAnomalie(
-        ficheControleId: widget.ficheControleId,
-        description: _descriptionController.text.trim(),
-        photo: _selectedImage,
-      );
+    // Créer l'objet anomalie à stocker localement
+    final anomalieData = {
+      'ficheControleId': widget.ficheControleId,
+      'tableIndex': widget.tableIndex,
+      'description': _descriptionController.text.trim(),
+      'photoPath': _selectedImage?.path,
+      'date': DateTime.now().toIso8601String(),
+    };
 
-      _showSuccessSnackbar('Anomalie signalée avec succès');
-      Navigator.of(context).pop(true); // Retourner true pour indiquer le succès
-      
-    } catch (e) {
-      _showErrorSnackbar('Erreur lors du signalement: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    // Retourner l'anomalie à la page principale pour stockage local
+    Navigator.of(context).pop(anomalieData);
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   void _showErrorSnackbar(String message) {

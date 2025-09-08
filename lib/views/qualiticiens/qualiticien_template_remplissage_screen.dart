@@ -98,45 +98,39 @@ class _QualiticiensTemplateRemplissageScreenState
   // Méthode pour synchroniser les données avant envoi
   void _synchronizeTableData() {
     print('🔄 Synchronisation des données de tableau...');
-    
-    // Synchroniser de 'elements' vers 'tables' pour être sûr
+    // Synchroniser tous les champs (input texte, select, etc.)
     if (_schemaData['elements'] is List && _schemaData['tables'] is List) {
       List elements = _schemaData['elements'];
       List tables = _schemaData['tables'];
-      
       for (var element in elements) {
         if (element is Map && element['type'] == 'table' && element['rows'] is List) {
-          // Trouver le tableau correspondant dans 'tables'
           for (var table in tables) {
             if (table is Map && table['rows'] is List) {
               List elementRows = element['rows'];
               List tableRows = table['rows'];
-              
-              // Synchroniser les valeurs
               for (int rowIndex = 0; rowIndex < elementRows.length && rowIndex < tableRows.length; rowIndex++) {
                 if (elementRows[rowIndex] is List && tableRows[rowIndex] is List) {
                   List elementRow = elementRows[rowIndex];
                   List tableRow = tableRows[rowIndex];
-                  
                   for (int colIndex = 0; colIndex < elementRow.length && colIndex < tableRow.length; colIndex++) {
-                    if (elementRow[colIndex] is Map && elementRow[colIndex]['value'] != null) {
-                      String newValue = elementRow[colIndex]['value'].toString();
-                      if (tableRow[colIndex] != newValue) {
-                        tableRow[colIndex] = newValue;
-                        print('🔄 Sync: Row $rowIndex, Col $colIndex = "$newValue"');
+                    if (elementRow[colIndex] is Map) {
+                      var value = elementRow[colIndex]['value'];
+                      // On synchronise tous les types de champs
+                      if (value != null) {
+                        tableRow[colIndex] = value.toString();
+                        print('🔄 Sync: Row $rowIndex, Col $colIndex = "$value"');
                       }
                     }
                   }
                 }
               }
-              break; // Sortir après avoir trouvé le premier tableau
+              break;
             }
           }
-          break; // Sortir après avoir traité le premier élément table
+          break;
         }
       }
     }
-    
     print('✅ Synchronisation terminée');
   }
 
@@ -300,18 +294,14 @@ class _QualiticiensTemplateRemplissageScreenState
 
   // NOUVEAU: Méthode pour recevoir et stocker les données d'anomalies
   void _onAnomalieAdded(Map<String, dynamic> anomalieData) {
-    print('📝 Anomalie reçue: $anomalieData');
-    
-    // Ajouter l'anomalie à la liste des anomalies
+    // Stocker l'anomalie localement pour l'envoyer avec la fiche
     _anomalies.add(anomalieData);
-    
-    print('📋 Total anomalies enregistrées: ${_anomalies.length}');
-    print('🗂️ Liste des anomalies: $_anomalies');
-    
-    // Optionnel: Afficher une confirmation
+    print('📝 Anomalie enregistrée localement: $anomalieData');
+    print('📋 Total anomalies enregistrées: \\${_anomalies.length}');
+    // Afficher une confirmation à l'utilisateur
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Anomalie enregistrée (${_anomalies.length} au total)'),
+        content: Text('Anomalie enregistrée (\\${_anomalies.length} au total)'),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
       ),
@@ -816,7 +806,7 @@ class _QualiticiensTemplateRemplissageScreenState
     ));
     
     // NOUVEAU: Vérifier le résultat et réinitialiser si envoi réussi
-    if (result == true) {
+    if (result != null && result is Map<String, dynamic>) {
       // L'envoi a été réussi, réinitialiser le formulaire
       _resetFormAfterSuccess();
     }
