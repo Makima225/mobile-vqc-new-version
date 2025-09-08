@@ -105,6 +105,28 @@ class FicheControleService extends GetConnect {
         ),
       ));
 
+      // Ajouter les photos de toutes les anomalies
+      if (anomalies != null && anomalies.isNotEmpty) {
+        for (int i = 0; i < anomalies.length; i++) {
+          final anomalie = anomalies[i];
+          final photoPath = anomalie['photoPath'];
+          if (photoPath != null && photoPath is String && photoPath.isNotEmpty) {
+            final photoFile = File(photoPath);
+            if (photoFile.existsSync()) {
+              form.files.add(MapEntry(
+                'anomalie_photo_$i',
+                MultipartFile(
+                  photoFile,
+                  filename: 'anomalie_photo_${i}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+                ),
+              ));
+              // Optionnel : ajouter la référence dans l'objet anomalie
+              anomalie['photo_field'] = 'anomalie_photo_$i';
+            }
+          }
+        }
+      }
+
       // Log des fichiers
       print('� FICHIERS AJOUTÉS:');
       form.files.forEach((entry) {
