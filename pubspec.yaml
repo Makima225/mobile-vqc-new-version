@@ -39,6 +39,7 @@ dependencies:
   jwt_decoder: ^2.0.1
   image_picker: ^1.0.4
   dio: ^5.9.0
+  sqflite: ^2.4.1
 
 dev_dependencies:
   flutter_test:
