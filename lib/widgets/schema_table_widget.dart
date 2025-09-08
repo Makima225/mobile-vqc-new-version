@@ -8,6 +8,8 @@ class SchemaTableWidget extends StatefulWidget {
   final int tableIndex;
   final int ficheControleId;
   final Function(int tableIndex, int rowIndex, int colIndex, String value) onCellChanged;
+  // Nouveau: callback pour remonter une anomalie créée dans la table
+  final void Function(Map<String, dynamic> anomalie)? onAnomalieAdded;
 
   const SchemaTableWidget({
     super.key,
@@ -15,6 +17,7 @@ class SchemaTableWidget extends StatefulWidget {
     required this.tableIndex,
     required this.ficheControleId,
     required this.onCellChanged,
+    this.onAnomalieAdded,
   });
 
   @override
@@ -443,25 +446,7 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
           ),
           const SizedBox(width: 12),
           // Bouton Prendre une photo
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _prendrePhoto(),
-              icon: const Icon(Icons.camera_alt_outlined, size: 20),
-              label: const Text(
-                'Prendre une photo',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 2,
-              ),
-            ),
-          ),
+         
         ],
       ),
     );
@@ -562,8 +547,15 @@ class _SchemaTableWidgetState extends State<SchemaTableWidget> {
 
     // Si l'anomalie a été signalée avec succès, on peut faire des actions supplémentaires
     if (result == true) {
-      // Par exemple, rafraîchir la liste des anomalies ou autre action
       print('✅ Anomalie signalée pour le tableau ${widget.tableIndex}');
+      // Construire un objet anomalie minimal à remonter
+      final anomalieData = {
+        'table_index': widget.tableIndex,
+        'fiche_controle_id': widget.ficheControleId,
+        'created_at': DateTime.now().toIso8601String(),
+        // On peut ajouter d'autres champs si le dialog renvoie des infos plus tard
+      };
+      widget.onAnomalieAdded?.call(anomalieData);
     }
   }
 

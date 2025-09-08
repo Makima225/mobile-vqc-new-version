@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -40,12 +41,23 @@ class _QualiticiensTemplateRemplissageScreenState
   
   // Gestion des anomalies (optionnel)
   List<Map<String, dynamic>> _anomalies = [];
+  
+  // NOUVEAU: Timer pour éviter les sauvegardes trop fréquentes
+  Timer? _saveTimer;
+  Map<String, String> _pendingChanges = {};
 
   @override
   void initState() {
     super.initState();
     _enteteService = Get.find<EnteteByTemplateService>();
     _loadEntetes();
+  }
+
+  @override
+  void dispose() {
+    // Nettoyer le timer pour éviter les fuites mémoire
+    _saveTimer?.cancel();
+    super.dispose();
   }
 
   // Méthode pour prendre une photo obligatoire
@@ -200,62 +212,110 @@ class _QualiticiensTemplateRemplissageScreenState
   }
 
   void _onCellChanged(int tableIndex, int rowIndex, int colIndex, String value) {
-    // CORRECTION: Sauvegarder sans provoquer de setState() qui redessine tout
+    // NOUVEAU: Système de debouncing pour éviter le verrouillage des champs
     print('🔄 Cell changed - Table: $tableIndex, Row: $rowIndex, Col: $colIndex, Value: "$value"');
     
-    // PAS de setState() ici pour éviter les reconstructions intempestives
-    // Juste mettre à jour les données en arrière-plan
+    // Annuler le timer précédent s'il existe
+    _saveTimer?.cancel();
+    
+    // Stocker temporairement les changements
+    String cellKey = 'table_${tableIndex}_row_${rowIndex}_col_$colIndex';
+    _pendingChanges[cellKey] = value;
+    
+    // Programmer la sauvegarde dans 500ms (quand l'utilisateur aura fini de taper)
+    _saveTimer = Timer(const Duration(milliseconds: 500), () {
+      _savePendingChanges();
+    });
+    
+    // IMPORTANT: Pas de modification immédiate des données pour éviter la reconstruction
+  }
+  
+  void _savePendingChanges() {
+    print('💾 Sauvegarde des changements en attente...');
     
     // Initialiser la structure si nécessaire
     if (_schemaData['elements'] == null) {
       _schemaData['elements'] = [];
     }
-    
-    // Mettre à jour dans la section 'elements' (structure détaillée)
-    if (_schemaData['elements'] is List) {
-      List elements = _schemaData['elements'];
-      
-      // Parcourir les éléments pour trouver le bon tableau
-      for (var element in elements) {
-        if (element is Map && element['type'] == 'table') {
-          List? rows = element['rows'];
-          if (rows != null && rowIndex < rows.length) {
-            List? row = rows[rowIndex];
-            if (row != null && colIndex < row.length) {
-              // Mettre à jour la valeur de la cellule dans 'elements'
-              if (row[colIndex] is Map) {
-                row[colIndex]['value'] = value;
-                print('✅ Cellule mise à jour dans elements: ${row[colIndex]}');
-              }
-            }
-          }
-          break; // Sortir après avoir trouvé le premier tableau
-        }
-      }
-    }
-    
-    // NOUVEAU: Mettre à jour AUSSI dans la section 'tables' (structure simplifiée)
     if (_schemaData['tables'] == null) {
       _schemaData['tables'] = [];
     }
     
-    if (_schemaData['tables'] is List) {
-      List tables = _schemaData['tables'];
-      if (tableIndex < tables.length && tables[tableIndex] is Map) {
-        Map table = tables[tableIndex];
-        if (table['rows'] is List) {
-          List rows = table['rows'];
-          if (rowIndex < rows.length && rows[rowIndex] is List) {
-            List row = rows[rowIndex];
-            if (colIndex < row.length) {
-              // Mettre à jour la valeur dans 'tables'
-              row[colIndex] = value;
-              print('✅ Cellule mise à jour dans tables: Row $rowIndex, Col $colIndex = "$value"');
+    // Appliquer tous les changements en attente
+    _pendingChanges.forEach((cellKey, value) {
+      // Parser la clé pour extraire les indices
+      RegExp regex = RegExp(r'table_(\d+)_row_(\d+)_col_(\d+)');
+      Match? match = regex.firstMatch(cellKey);
+      
+      if (match != null) {
+        int tableIndex = int.parse(match.group(1)!);
+        int rowIndex = int.parse(match.group(2)!);
+        int colIndex = int.parse(match.group(3)!);
+        
+        // Mettre à jour dans la section 'elements' (structure détaillée)
+        if (_schemaData['elements'] is List) {
+          List elements = _schemaData['elements'];
+          
+          for (var element in elements) {
+            if (element is Map && element['type'] == 'table') {
+              List? rows = element['rows'];
+              if (rows != null && rowIndex < rows.length) {
+                List? row = rows[rowIndex];
+                if (row != null && colIndex < row.length) {
+                  if (row[colIndex] is Map) {
+                    row[colIndex]['value'] = value;
+                    print('✅ Cellule mise à jour dans elements: ${row[colIndex]}');
+                  }
+                }
+              }
+              break;
+            }
+          }
+        }
+        
+        // Mettre à jour dans la section 'tables' (structure simplifiée)
+        if (_schemaData['tables'] is List) {
+          List tables = _schemaData['tables'];
+          if (tableIndex < tables.length && tables[tableIndex] is Map) {
+            Map table = tables[tableIndex];
+            if (table['rows'] is List) {
+              List rows = table['rows'];
+              if (rowIndex < rows.length && rows[rowIndex] is List) {
+                List row = rows[rowIndex];
+                if (colIndex < row.length) {
+                  row[colIndex] = value;
+                  print('✅ Cellule mise à jour dans tables: Row $rowIndex, Col $colIndex = "$value"');
+                }
+              }
             }
           }
         }
       }
-    }
+    });
+    
+    // Nettoyer les changements en attente
+    _pendingChanges.clear();
+    print('✅ Sauvegarde terminée');
+  }
+
+  // NOUVEAU: Méthode pour recevoir et stocker les données d'anomalies
+  void _onAnomalieAdded(Map<String, dynamic> anomalieData) {
+    print('📝 Anomalie reçue: $anomalieData');
+    
+    // Ajouter l'anomalie à la liste des anomalies
+    _anomalies.add(anomalieData);
+    
+    print('📋 Total anomalies enregistrées: ${_anomalies.length}');
+    print('🗂️ Liste des anomalies: $_anomalies');
+    
+    // Optionnel: Afficher une confirmation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Anomalie enregistrée (${_anomalies.length} au total)'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _nextStep() {
@@ -468,6 +528,7 @@ class _QualiticiensTemplateRemplissageScreenState
                 tableIndex: tableIndex,
                 ficheControleId: template?.id ?? 0,
                 onCellChanged: _onCellChanged,
+                onAnomalieAdded: _onAnomalieAdded,
               ),
             );
           }).toList(),
@@ -664,6 +725,50 @@ class _QualiticiensTemplateRemplissageScreenState
     );
   }
 
+  // NOUVEAU: Méthode pour réinitialiser le formulaire après envoi réussi
+  void _resetFormAfterSuccess() {
+    print('🔄 Réinitialisation du formulaire...');
+    
+    setState(() {
+      // Réinitialiser les données de schéma
+      _schemaData.clear();
+      
+      // Vider les changements en attente
+      _pendingChanges.clear();
+      
+      // Annuler le timer en cours
+      _saveTimer?.cancel();
+      
+      // Réinitialiser les entêtes
+      _enteteValues.clear();
+      
+      // Supprimer la photo obligatoire
+      _photoObligatoire = null;
+      
+      // Vider les anomalies
+      _anomalies.clear();
+      
+      // Revenir au premier step
+      _currentStep = 0;
+    });
+    
+    // Recharger les entêtes pour un nouveau formulaire
+    _loadEntetes();
+    
+    print('✅ Formulaire réinitialisé avec succès');
+    
+    // Afficher une confirmation
+    Get.snackbar(
+      'Succès',
+      'Formulaire envoyé avec succès ! Prêt pour un nouveau remplissage.',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.green.shade100,
+      colorText: Colors.green.shade800,
+      icon: const Icon(Icons.check_circle, color: Colors.green),
+      duration: const Duration(seconds: 3),
+    );
+  }
+
   Future<void> _goToSignature() async {
     // Récupérer le template depuis les arguments
     final TemplateFichecontrole? template = Get.arguments as TemplateFichecontrole?;
@@ -701,7 +806,7 @@ class _QualiticiensTemplateRemplissageScreenState
     print('  ✅ Photo: ${_photoObligatoire != null ? "Présente" : "Manquante"}');
     
     // Naviguer vers l'écran de signature avec tous les paramètres requis
-    Get.to(() => SignatureScreen(
+    final result = await Get.to(() => SignatureScreen(
       template: template,
       activiteSpecifiqueId: activiteSpecifiqueId,
       enteteValues: enteteValuesString,
@@ -709,6 +814,12 @@ class _QualiticiensTemplateRemplissageScreenState
       photoObligatoire: _photoObligatoire,
       anomalies: _anomalies,
     ));
+    
+    // NOUVEAU: Vérifier le résultat et réinitialiser si envoi réussi
+    if (result == true) {
+      // L'envoi a été réussi, réinitialiser le formulaire
+      _resetFormAfterSuccess();
+    }
   }
 
   void _showErrorSnackbar(String message) {
