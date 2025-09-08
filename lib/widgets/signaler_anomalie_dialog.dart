@@ -36,17 +36,19 @@ class _SignalerAnomalieDialogState extends State<SignalerAnomalieDialog> {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 24),
-            _buildDescriptionField(),
-            const SizedBox(height: 20),
-            _buildPhotoSection(),
-            const SizedBox(height: 24),
-            _buildButtons(),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+              _buildDescriptionField(),
+              const SizedBox(height: 20),
+              _buildPhotoSection(),
+              const SizedBox(height: 24),
+              _buildButtons(),
+            ],
+          ),
         ),
       ),
     );
