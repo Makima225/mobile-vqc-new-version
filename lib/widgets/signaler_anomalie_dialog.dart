@@ -347,7 +347,7 @@ class _SignalerAnomalieDialogState extends State<SignalerAnomalieDialog> {
     // Créer l'objet anomalie à stocker localement
     final anomalieData = {
       'ficheControleId': widget.ficheControleId,
-      'tableIndex': widget.tableIndex,
+      'tableIndex': widget.tableIndex,      
       'description': _descriptionController.text.trim(),
       'photoPath': _selectedImage?.path,
       'date': DateTime.now().toIso8601String(),

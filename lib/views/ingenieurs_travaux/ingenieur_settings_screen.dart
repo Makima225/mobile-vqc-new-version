@@ -5,14 +5,14 @@ import '../../services/auth/auth_service.dart';
 import '../../widgets/profile_picture_widget.dart';
 import '../auth/change_password_screen.dart';
 
-class IngenieurSettings extends StatefulWidget {
-  const IngenieurSettings({super.key});
+class IngenieurSettingsScreen extends StatefulWidget {
+  const IngenieurSettingsScreen({super.key});
 
   @override
-  State<IngenieurSettings> createState() => _IngenieurSettingsState();
+  State<IngenieurSettingsScreen> createState() => _IngenieurSettingsState();
 }
 
-class _IngenieurSettingsState extends State<IngenieurSettings> {
+class _IngenieurSettingsState extends State<IngenieurSettingsScreen> {
   final ProfilePictureService profileService = Get.find<ProfilePictureService>();
   final AuthService authService = Get.find<AuthService>();
   
@@ -66,87 +66,169 @@ class _IngenieurSettingsState extends State<IngenieurSettings> {
   }
 
   Widget _buildUserProfileCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: mainColor.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Photo de profil avec notre widget
-          const ProfilePictureWidget(
-            size: 100,
-            borderColor: mainColor,
-            borderWidth: 3,
-            showEditIcon: true,
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Informations utilisateur
-          const Text(
-            'John Smith', // Remplacez par les vraies données utilisateur
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          
-          const SizedBox(height: 4),
-          
-          Text(
-            'Ingénieur Travaux',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    return Obx(() {
+      String? role = authService.userRole.value;
+
+      // Vérifier si l'utilisateur est connecté
+      if (role == null) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(40),
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      return FutureBuilder(
+        future: authService.getUserProfile(),
+        builder: (context, AsyncSnapshot<Response> response) {
+          if (response.connectionState == ConnectionState.waiting) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(40),
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (response.hasError || response.data?.statusCode != 200) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: mainColor.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  "Erreur lors du chargement du profil",
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            );
+          }
+
+          // Récupération des données de l'utilisateur
+          final userData = response.data?.body;
+          final String name = userData?["name"] ?? "Utilisateur";
+          final String surname = userData?["surname"] ?? "";
+          final String userRole = userData?["role"] ?? "Qualiticien";
+          final String picture = userData?["picture"] ?? "";
+
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: mainColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: mainColor.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Column(
               children: [
+                // Photo de profil avec notre widget ou image réseau
                 Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: mainColor,
+                      width: 3,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: (picture.isNotEmpty && Uri.tryParse(picture)?.hasAbsolutePath == true)
+                        ? Image.network(
+                            picture,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const ProfilePictureWidget(
+                                size: 94, // 100 - 6 pour les bordures
+                                showEditIcon: true,
+                              );
+                            },
+                          )
+                        : const ProfilePictureWidget(
+                            size: 94, // 100 - 6 pour les bordures
+                            showEditIcon: true,
+                          ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                
+                const SizedBox(height: 16),
+                
+                // Nom et prénom de l'utilisateur
                 Text(
-                  'En ligne',
-                  style: TextStyle(
-                    color: mainColor,
-                    fontSize: 12,
+                  surname.isNotEmpty ? "$name $surname" : name,
+                  style: const TextStyle(
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 4),
+                
+                // Rôle de l'utilisateur
+                Text(
+                  userRole,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Badge de statut
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: mainColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'En ligne',
+                        style: TextStyle(
+                          color: mainColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
+          );
+        },
+      );
+    });
   }
 
   Widget _buildSettingsSection() {
@@ -178,13 +260,13 @@ class _IngenieurSettingsState extends State<IngenieurSettings> {
             child: Row(
               children: [
                 Icon(
-                  Icons.engineering,
+                  Icons.settings,
                   color: mainColor,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Actions Ingénieur',
+                  'Actions',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -195,47 +277,13 @@ class _IngenieurSettingsState extends State<IngenieurSettings> {
             ),
           ),
           
-          // Options des paramètres spécifiques aux ingénieurs
+          // Options des paramètres
           _buildSettingsTile(
             icon: Icons.add_a_photo_outlined,
             title: "Ajouter une photo",
             subtitle: "Modifier votre photo de profil",
             onTap: () => profileService.showImageSourceDialog(),
             iconColor: Colors.blue,
-          ),
-          
-          _buildDivider(),
-          
-          _buildSettingsTile(
-            icon: Icons.assignment_outlined,
-            title: "Mes projets",
-            subtitle: "Consulter mes projets assignés",
-            onTap: () {
-              // TODO: Navigation vers la liste des projets
-              Get.snackbar(
-                'Navigation',
-                'Ouverture de la liste des projets...',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-            iconColor: Colors.green,
-          ),
-          
-          _buildDivider(),
-          
-          _buildSettingsTile(
-            icon: Icons.bar_chart_outlined,
-            title: "Rapports",
-            subtitle: "Générer et consulter les rapports",
-            onTap: () {
-              // TODO: Navigation vers les rapports
-              Get.snackbar(
-                'Navigation',
-                'Ouverture des rapports...',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-            iconColor: Colors.purple,
           ),
           
           _buildDivider(),
@@ -248,23 +296,6 @@ class _IngenieurSettingsState extends State<IngenieurSettings> {
               Get.to(() => const ChangePasswordScreen());
             },
             iconColor: Colors.orange,
-          ),
-          
-          _buildDivider(),
-          
-          _buildSettingsTile(
-            icon: Icons.notifications_outlined,
-            title: "Notifications",
-            subtitle: "Gérer vos notifications",
-            onTap: () {
-              // TODO: Navigation vers les paramètres de notifications
-              Get.snackbar(
-                'Navigation',
-                'Ouverture des paramètres de notifications...',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-            iconColor: Colors.teal,
           ),
           
           _buildDivider(),

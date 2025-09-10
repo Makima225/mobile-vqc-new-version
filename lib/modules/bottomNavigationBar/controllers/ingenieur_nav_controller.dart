@@ -9,7 +9,7 @@ class IngenieurNavController extends GetxController {
 
   final List<Widget> pages = [
     IngenieurHomeScreen(),
-    IngenieurSettings()
+    IngenieurSettingsScreen()
   ];
 
   void changeTabIndex(int index) {
