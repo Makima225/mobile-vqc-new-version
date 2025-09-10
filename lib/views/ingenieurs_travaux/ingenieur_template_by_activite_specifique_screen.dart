@@ -1,30 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mobile_vqc_new_version/controllers/ingenieurs_travaux/ingenieur_activite_specifique_page_controller.dart';
-import 'package:mobile_vqc_new_version/views/ingenieurs_travaux/ingenieur_template_by_activite_specifique_screen.dart';
+import 'package:mobile_vqc_new_version/controllers/ingenieurs_travaux/ingenieur_template_by_activite_specifique_controller.dart';
 
-
-
-
-class IngenieurActiviteSpecifiquesPage extends StatelessWidget {
-  final int activiteGeneraleId;
-  final IngenieurActiviteSpecifiquesPageController _controller = Get.put(IngenieurActiviteSpecifiquesPageController());
+class IngenieurTemplateByActiviteSpecifiqueScreen extends StatelessWidget {
+  final int activiteSpecifiqueId;
+  final IngenieurTemplateByActiviteSpecifiqueController _controller = Get.put(IngenieurTemplateByActiviteSpecifiqueController());
 
   static const Color mainColor = Colors.deepPurple;
-  
-  IngenieurActiviteSpecifiquesPage({super.key, required this.activiteGeneraleId});
+
+  IngenieurTemplateByActiviteSpecifiqueScreen({super.key, required this.activiteSpecifiqueId});
 
   @override
   Widget build(BuildContext context) {
-    // Charger les activités spécifiques dès l'affichage de la page
-    _controller.fetchActivitesSpecifiques(activiteGeneraleId);
+    // Charger les templates dès l'affichage de la page
+    _controller.fetchTemplatesByActiviteSpecifique(activiteSpecifiqueId);
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: mainColor,
         title: Center(
           child: Text(
-            "Activités Spécifiques",
+            "Templates par Activité Spécifique",
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -39,13 +35,12 @@ class IngenieurActiviteSpecifiquesPage extends StatelessWidget {
         } else if (_controller.errorMessage.isNotEmpty) {
           return Center(child: Text(_controller.errorMessage.value));
         } else if (_controller.activitesSpecifiques.isEmpty) {
-          return Center(child: Text("Aucune activité spécifique trouvée."));
+          return Center(child: Text("Aucun template trouvé pour cette activité spécifique."));
         } else {
           return ListView.builder(
             itemCount: _controller.activitesSpecifiques.length,
             itemBuilder: (context, index) {
-              final activite = _controller.activitesSpecifiques[index];
-
+              final template = _controller.activitesSpecifiques[index];
               return Card(
                 margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 elevation: 4,
@@ -55,15 +50,13 @@ class IngenieurActiviteSpecifiquesPage extends StatelessWidget {
                 child: ListTile(
                   contentPadding: EdgeInsets.all(10),
                   title: Text(
-                    activite['titre'] ?? 'Titre non disponible',
+                    template['nom'] ?? 'Titre non disponible',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
-                   onTap: () {
-                    Get.to(IngenieurTemplateByActiviteSpecifiqueScreen(
-                     activiteSpecifiqueId: activite['id'],
-                     ));
-                   },
+                  onTap: () {
+                    // Action à définir pour ouvrir le détail du template ou autre
+                  },
                 ),
               );
             },
