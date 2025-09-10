@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_vqc_new_version/controllers/ingenieurs_travaux/ingenieur_home_page_controller.dart';
+import 'package:mobile_vqc_new_version/views/ingenieurs_travaux/ingenieur_activite_specifique_screen.dart';
 
 
 
@@ -56,12 +57,12 @@ class IngenieurHomeScreen extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
-                  // onTap: () {
-                  //   final int activiteGeneraleId = activite['id'];
-                  //   Get.to(() => IngenieurActiviteSpecifiquesPage(
-                  //     activiteGeneraleId: activiteGeneraleId,
-                  //   ));
-                  // },
+                  onTap: () {
+                    final int activiteGeneraleId = activite['id'];
+                    Get.to(() => IngenieurActiviteSpecifiquesPage(
+                       activiteGeneraleId: activiteGeneraleId,
+                    ));
+                   },
                 ),
               );
             },
