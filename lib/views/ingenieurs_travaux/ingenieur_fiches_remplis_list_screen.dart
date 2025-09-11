@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_vqc_new_version/controllers/ingenieurs_travaux/ingenieur_fiche_remplis_list_controller.dart';
+import 'package:mobile_vqc_new_version/views/ingenieurs_travaux/ingenieur_travaux_fiche_remplis_detail_screen.dart';
 
 class IngenieurFichesRemplisListScreen extends StatelessWidget {
    
@@ -63,7 +64,8 @@ class IngenieurFichesRemplisListScreen extends StatelessWidget {
                   ),
                   trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
                   onTap: () {
-                    // Action à définir pour ouvrir le détail de la fiche
+                    final int ficheId = fiche['id'];
+                    Get.to(() => IngenieurTravauxFicheRemplisDetailScreen(ficheId: ficheId));
                   },
                 ),
               );
