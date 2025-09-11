@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_vqc_new_version/controllers/ingenieurs_travaux/ingenieur_travaux_fiche_remplis_detail_controller.dart';
-
-
+import 'package:mobile_vqc_new_version/models/core/anomalie_model.dart';
 
 class IngenieurTravauxFicheRemplisDetailScreen extends StatelessWidget {
   final IngenieurTravauxFicheRemplisDetailController _controller = Get.put(IngenieurTravauxFicheRemplisDetailController());
 
   static const Color mainColor = Colors.deepPurple;
+  static const double portraitImageHeight = 500; // en pixels
+  static const double portraitImageWidth = 350; // en pixels
 
   IngenieurTravauxFicheRemplisDetailScreen({super.key, required int ficheId}) {
     _controller.fetchFicheRemplieDetailById(ficheId);
@@ -19,16 +20,15 @@ class IngenieurTravauxFicheRemplisDetailScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: mainColor,
         title: Center(
-          child:  Text('Détail Fiche Remplie', 
-          style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+          child: Text(
+            'Détail Fiche Remplie',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
-
-        )
-        
+        ),
       ),
       body: Obx(() {
         if (_controller.isLoading.value) {
@@ -149,7 +149,7 @@ class IngenieurTravauxFicheRemplisDetailScreen extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: Row( 
+                    child: Row(
                       children: [
                         // Conteneur pour la signature du qualiticient
                         Container(
@@ -304,12 +304,251 @@ class IngenieurTravauxFicheRemplisDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Boutons d'action
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Obx(() {
+                          // Utiliser directement la liste d'anomalies du controller
+                          final anomalies = _controller.anomalies;
+                          final hasAnomalies = anomalies.isNotEmpty;
+                          
+                          print('🔍 Debug anomalies: ${anomalies.length} anomalies trouvées');
+                          for (var anomalie in anomalies) {
+                            print('  - Anomalie ID: ${anomalie.id}, Description: ${anomalie.description}');
+                          }
+                          
+                          return ElevatedButton(
+                            onPressed: hasAnomalies ? () {
+                              _showAnomaliesDialog(context, anomalies);
+                            } : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: hasAnomalies ? Colors.red : Colors.grey,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              hasAnomalies ? "Voir l'anomalie (${anomalies.length})" : "Aucune anomalie",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          );
+                        }),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Action pour signer
+                          // Tu peux ajouter la logique de signature ici
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: mainColor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          "Signer",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
           
         }
       }),
+    );
+  }
+
+  // Méthode pour afficher les anomalies dans une boîte de dialogue
+  void _showAnomaliesDialog(BuildContext context, List<Anomalie> anomalies) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+            ),
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Titre avec bouton de fermeture
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Détails des anomalies (${anomalies.length})",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Divider(),
+                // Contenu des anomalies avec défilement
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: anomalies.map((anomalie) {
+                        return Card(
+                          elevation: 3,
+                          margin: EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Description :",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  anomalie.description,
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                                SizedBox(height: 10),
+                                if (anomalie.dateSignalement != null) ...[
+                                  Text(
+                                    "Date de signalement :",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${anomalie.dateSignalement!.day}/${anomalie.dateSignalement!.month}/${anomalie.dateSignalement!.year} à ${anomalie.dateSignalement!.hour}:${anomalie.dateSignalement!.minute.toString().padLeft(2, '0')}",
+                                    style: TextStyle(fontSize: 14),
+                                  ),
+                                  SizedBox(height: 10),
+                                ],
+                                if (anomalie.photoUrl != null && anomalie.photoUrl!.isNotEmpty) ...[
+                                  Text(
+                                    "Photo de l'anomalie :",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          final orientation = MediaQuery.of(context).orientation;
+                                          final screenHeight = MediaQuery.of(context).size.height;
+                                          final screenWidth = MediaQuery.of(context).size.width;
+                                          double maxHeight = orientation == Orientation.portrait
+                                              ? screenHeight * 0.9
+                                              : screenHeight * 0.7;
+                                          double maxWidth = orientation == Orientation.portrait
+                                              ? screenWidth * 0.95
+                                              : screenWidth * 0.8;
+                                          return Dialog(
+                                            child: Container(
+                                              constraints: BoxConstraints(
+                                                maxHeight: maxHeight,
+                                                maxWidth: maxWidth,
+                                              ),
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  AppBar(
+                                                    title: Text("Photo de l'anomalie"),
+                                                    leading: IconButton(
+                                                      icon: Icon(Icons.close),
+                                                      onPressed: () => Navigator.pop(context),
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Image.network(
+                                                      anomalie.photoUrl!,
+                                                      fit: BoxFit.contain,
+                                                      errorBuilder: (context, error, stackTrace) {
+                                                        return Center(child: Text("Image non disponible"));
+                                                      },
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: Container(
+                                      height: 400,
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Image.network(
+                                        anomalie.photoUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Center(child: Text("Image non disponible"));
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                // Bouton de fermeture en bas
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: IngenieurTravauxFicheRemplisDetailScreen.mainColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text("Fermer", style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

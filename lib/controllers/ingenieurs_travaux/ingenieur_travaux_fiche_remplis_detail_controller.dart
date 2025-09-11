@@ -34,8 +34,13 @@ class IngenieurTravauxFicheRemplisDetailController extends GetxController{
       // Parse et assigner les listes imbriquées
       if (data.containsKey('anomalies')) {
         final List<dynamic> anomaliesJson = data['anomalies'];
+        print('🔍 Debug Controller: ${anomaliesJson.length} anomalies reçues du backend');
+        print('🔍 Debug Controller: JSON des anomalies: $anomaliesJson');
         anomalies.assignAll(anomaliesJson.map((json) => Anomalie.fromJson(json)).toList());
+        print('🔍 Debug Controller: ${anomalies.length} anomalies parsées et assignées');
       } else {
+        print('⚠️ Debug Controller: Aucune clé "anomalies" trouvée dans la réponse');
+        print('🔍 Debug Controller: Clés disponibles: ${data.keys.toList()}');
         anomalies.clear();
       }
 
