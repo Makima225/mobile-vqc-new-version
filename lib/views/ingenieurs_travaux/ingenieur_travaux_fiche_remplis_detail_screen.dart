@@ -110,6 +110,200 @@ class IngenieurTravauxFicheRemplisDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Affichage du nom et prénom du qualiticient
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Fiche remplie par : ",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            "${_controller.ficheRemplie['qualiticient_details']?['name'] ?? 'Nom inconnu'} ${_controller.ficheRemplie['qualiticient_details']?['surname'] ?? 'Prénom inconnu'}",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: mainColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Container pour signature et photo du contrôle avec scroll horizontal
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row( 
+                      children: [
+                        // Conteneur pour la signature du qualiticient
+                        Container(
+                          margin: EdgeInsets.only(right: 16),
+                          child: GestureDetector(
+                            onTap: () {
+                              final signatureUrl = _controller.ficheRemplie['signature_qualiticient'] ?? "";
+                              if (signatureUrl.isNotEmpty) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Container(
+                                      constraints: BoxConstraints(
+                                        maxHeight: MediaQuery.of(context).size.height * 0.8,
+                                        maxWidth: MediaQuery.of(context).size.width * 0.9,
+                                      ),
+                                      padding: EdgeInsets.all(16),
+                                      color: Colors.white,
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              "Signature du qualiticient",
+                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                            ),
+                                            SizedBox(height: 16),
+                                            Container(
+                                              constraints: BoxConstraints(
+                                                maxHeight: MediaQuery.of(context).size.height * 0.6,
+                                              ),
+                                              child: Image.network(
+                                                signatureUrl,
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Center(child: Text("Image non disponible"));
+                                                },
+                                              ),
+                                            ),
+                                            SizedBox(height: 16),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: Text("Fermer"),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: mainColor,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Image.network(
+                                _controller.ficheRemplie['signature_qualiticient'] ?? "",
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(child: Text("Signature\nnon disponible", textAlign: TextAlign.center));
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Conteneur pour la photo du contrôle
+                        Container(
+                          child: GestureDetector(
+                            onTap: () {
+                              final photoUrl = _controller.ficheRemplie['photo'] ?? "";
+                              if (photoUrl.isNotEmpty) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Container(
+                                      constraints: BoxConstraints(
+                                        maxHeight: MediaQuery.of(context).size.height * 0.8,
+                                        maxWidth: MediaQuery.of(context).size.width * 0.9,
+                                      ),
+                                      padding: EdgeInsets.all(16),
+                                      color: Colors.white,
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              "Photo du contrôle",
+                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                            ),
+                                            SizedBox(height: 16),
+                                            Container(
+                                              constraints: BoxConstraints(
+                                                maxHeight: MediaQuery.of(context).size.height * 0.6,
+                                              ),
+                                              child: Image.network(
+                                                photoUrl,
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Center(child: Text("Image non disponible"));
+                                                },
+                                              ),
+                                            ),
+                                            SizedBox(height: 16),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: Text("Fermer"),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: mainColor,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Image.network(
+                                _controller.ficheRemplie['photo'] ?? "",
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(child: Text("Photo\nnon disponible", textAlign: TextAlign.center));
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           );
