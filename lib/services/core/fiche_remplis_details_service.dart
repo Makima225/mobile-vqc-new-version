@@ -61,7 +61,7 @@ class FicheRemplisDetailsService  extends GetConnect{
     required Uint8List signatureImage,
   }) async {
     try {
-      final url = Uri.parse("${httpClient.baseUrl}/fiche-remplis/$ficheId/signer-par-ingenieur/");
+      final url = Uri.parse("${httpClient.baseUrl}/fiche-controle-remplie/update-with-signature-ingenieur/$ficheId/");
       final token = AuthService.to.token;
 
       if (signatureImage.isEmpty) {
